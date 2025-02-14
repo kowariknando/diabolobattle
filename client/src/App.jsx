@@ -9,20 +9,17 @@ function App() {
     presentation: "",
     additionalPoints: ""
   });
-
   const [people, setPeople] = useState([]);
 
-  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate required fields (additionalPoints is optional)
+    // Validate required fields
     if (
       !formData.name ||
       formData.difficulty === "" ||
@@ -35,8 +32,8 @@ function App() {
     }
 
     try {
-      // IMPORTANT: Updated to /people/add
-      const response = await fetch("/people/add", {
+      // Hardcode the backend URL here
+      const response = await fetch("http://localhost:5000/people/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -54,6 +51,7 @@ function App() {
       if (response.ok) {
         const newPerson = await response.json();
         setPeople((prevPeople) => [...prevPeople, newPerson]);
+        // Reset form
         setFormData({
           name: "",
           difficulty: "",
@@ -71,11 +69,10 @@ function App() {
     }
   };
 
-  // Fetch all people
   const fetchPeople = async () => {
     try {
-      // IMPORTANT: Updated to /people/all
-      const response = await fetch("/people/all");
+      // Hardcode the backend URL here
+      const response = await fetch("http://localhost:5000/people/all");
       const data = await response.json();
       setPeople(data);
     } catch (error) {
