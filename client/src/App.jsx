@@ -9,25 +9,34 @@ function App() {
     presentation: "",
     additionalPoints: ""
   });
+
   const [people, setPeople] = useState([]);
 
+  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     // Validate required fields (additionalPoints is optional)
-    if (!formData.name || formData.difficulty === "" || formData.cleanness === "" ||
-        formData.creativity === "" || formData.presentation === "") {
+    if (
+      !formData.name ||
+      formData.difficulty === "" ||
+      formData.cleanness === "" ||
+      formData.creativity === "" ||
+      formData.presentation === ""
+    ) {
       alert("Please fill in all required fields.");
       return;
     }
 
     try {
-      const response = await fetch("/people/add", {  // Updated endpoint
+      // IMPORTANT: Updated to /people/add
+      const response = await fetch("/people/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -36,13 +45,15 @@ function App() {
           cleanness: Number(formData.cleanness),
           creativity: Number(formData.creativity),
           presentation: Number(formData.presentation),
-          additionalPoints: formData.additionalPoints ? Number(formData.additionalPoints) : undefined
+          additionalPoints: formData.additionalPoints
+            ? Number(formData.additionalPoints)
+            : undefined
         })
       });
 
       if (response.ok) {
         const newPerson = await response.json();
-        setPeople(prevPeople => [...prevPeople, newPerson]);
+        setPeople((prevPeople) => [...prevPeople, newPerson]);
         setFormData({
           name: "",
           difficulty: "",
@@ -60,9 +71,11 @@ function App() {
     }
   };
 
+  // Fetch all people
   const fetchPeople = async () => {
     try {
-      const response = await fetch("/people/all");  // Updated endpoint
+      // IMPORTANT: Updated to /people/all
+      const response = await fetch("/people/all");
       const data = await response.json();
       setPeople(data);
     } catch (error) {
@@ -152,9 +165,12 @@ function App() {
 
       <h2>People List</h2>
       <ul>
-        {people.map(person => (
+        {people.map((person) => (
           <li key={person._id}>
-            {person.name} – Difficulty: {person.difficulty}, Cleanness: {person.cleanness}, Creativity: {person.creativity}, Presentation: {person.presentation}, Additional Points: {person.additionalPoints ?? "N/A"}
+            {person.name} – Difficulty: {person.difficulty}, Cleanness:{" "}
+            {person.cleanness}, Creativity: {person.creativity}, Presentation:{" "}
+            {person.presentation}, Additional Points:{" "}
+            {person.additionalPoints ?? "N/A"}
           </li>
         ))}
       </ul>

@@ -1,33 +1,31 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const personRoutes = require("./routes/personRoutes");
 
-require("dotenv").config();
-
 const app = express();
+
+// Middleware
 app.use(express.json());
 app.use(cors());
+
+// Use /people prefix
 app.use("/people", personRoutes);
 
-// MongoDB connection
+// Connect to MongoDB
 mongoose
-    .connect(process.env.MONGO_URI)
-    .then(() => console.log("Connected to MongoDB"))
-    .catch((err) => console.error("MongoDB connection error:", err));
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("Connected to MongoDB"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // Basic API route
 app.get("/", (req, res) => {
-    res.send("Backend is running!");
+  res.send("Backend is running!");
 });
 
-// Export the app for testing
-module.exports = app;
-
-// Start the server only if not in testing mode
-if (process.env.NODE_ENV !== "test") {
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-}
+// Start the server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
