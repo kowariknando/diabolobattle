@@ -1,15 +1,13 @@
+import { server } from "./mocks/server";
 import "@testing-library/jest-dom";
-import { TextEncoder, TextDecoder } from "util";
+import "whatwg-fetch"; // ✅ Ensures Axios can use `fetch` properly
 
-// Ensure TextEncoder is defined
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
 
-// Ensure fetch and Response exist (fix Jest compatibility)
-if (!global.fetch) {
-    const fetch = require("node-fetch");
-    global.fetch = fetch;
-    global.Response = fetch.Response;
-    global.Request = fetch.Request;
-    global.Headers = fetch.Headers;
-}
+// Establish API mocking before all tests.
+beforeAll(() => server.listen());
+
+// Reset any request handlers that are declared during the tests.
+afterEach(() => server.resetHandlers());
+
+// Clean up after tests are finished.
+afterAll(() => server.close());

@@ -1,168 +1,165 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-
+import React, { useState, useEffect } from "react";
 
 function App() {
-    const [people, setPeople] = useState([]);
-    const [formData, setFormData] = useState({ name: "", age: "", city: "" });
+  const [formData, setFormData] = useState({
+    name: "",
+    difficulty: "",
+    cleanness: "",
+    creativity: "",
+    presentation: "",
+    additionalPoints: ""
+  });
+  const [people, setPeople] = useState([]);
 
-    // Fetch data from the backend
-    useEffect(() => {
-        axios.get("http://localhost:5000/people/all")
-            .then((response) => setPeople(response.data))
-            .catch((error) => console.error("Error fetching data:", error));
-    }, []);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-    // Handle form input changes
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-    // Handle form submission
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        axios.post("http://localhost:5000/people/add", formData)
-            .then((response) => {
-                // Add the new person to the list
-                setPeople([...people, response.data]);
-                // Clear the form
-                setFormData({ name: "", age: "", city: "" });
-            })
-            .catch((error) => console.error("Error adding person:", error));
-    };
+    // Validate required fields (additionalPoints is optional)
+    if (!formData.name || formData.difficulty === "" || formData.cleanness === "" ||
+        formData.creativity === "" || formData.presentation === "") {
+      alert("Please fill in all required fields.");
+      return;
+    }
 
-    const handleDelete = (id) => {
-    axios.delete(`http://localhost:5000/people/delete/${id}`)
-        .then(() => {
-            // Remove the person from the UI after deleting
-            setPeople(people.filter(person => person._id !== id));
+    try {
+      const response = await fetch("/people/add", {  // Updated endpoint
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          difficulty: Number(formData.difficulty),
+          cleanness: Number(formData.cleanness),
+          creativity: Number(formData.creativity),
+          presentation: Number(formData.presentation),
+          additionalPoints: formData.additionalPoints ? Number(formData.additionalPoints) : undefined
         })
-        .catch((error) => console.error("Error deleting person:", error));
-    };
+      });
 
+      if (response.ok) {
+        const newPerson = await response.json();
+        setPeople(prevPeople => [...prevPeople, newPerson]);
+        setFormData({
+          name: "",
+          difficulty: "",
+          cleanness: "",
+          creativity: "",
+          presentation: "",
+          additionalPoints: ""
+        });
+      } else {
+        const errorData = await response.json();
+        alert("Error: " + errorData.message);
+      }
+    } catch (error) {
+      alert("Error: " + error.message);
+    }
+  };
 
-    return (
-        <div style={styles.container}>
-            <h1 style={styles.title}>People List</h1>
+  const fetchPeople = async () => {
+    try {
+      const response = await fetch("/people/all");  // Updated endpoint
+      const data = await response.json();
+      setPeople(data);
+    } catch (error) {
+      console.error("Error fetching people:", error);
+    }
+  };
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} style={styles.form}>
-                <input
-                    type="text"
-                    name="name"
-                    placeholder="Name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    style={styles.input}
-                    required
-                />
-                <input
-                    type="number"
-                    name="age"
-                    placeholder="Age"
-                    value={formData.age}
-                    onChange={handleChange}
-                    style={styles.input}
-                    required
-                />
-                <input
-                    type="text"
-                    name="city"
-                    placeholder="City"
-                    value={formData.city}
-                    onChange={handleChange}
-                    style={styles.input}
-                    required
-                />
-                <button type="submit" style={styles.button}>Add Person</button>
-            </form>
+  useEffect(() => {
+    fetchPeople();
+  }, []);
 
-            {/* People List */}
-            <ul style={styles.list}>
-                {people.map((person) => (
-                    <li key={person._id} style={styles.listItem}>
-            <span style={styles.listText}>
-                <strong>ID:</strong> {person._id} <br/>
-                {person.name} - {person.age} years old, lives in {person.city}.
-            </span>
-                        <button onClick={() => handleDelete(person._id)} style={styles.deleteButton}>
-                            Delete
-                        </button>
-                    </li>
-                ))}
-            </ul>
-
+  return (
+    <div>
+      <h1>Diabolo Battle - Add Person</h1>
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Name (required):</label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
         </div>
-    );
-}
+        <div>
+          <label>Difficulty (0-10, required):</label>
+          <input
+            type="number"
+            name="difficulty"
+            value={formData.difficulty}
+            onChange={handleChange}
+            min="0"
+            max="10"
+            required
+          />
+        </div>
+        <div>
+          <label>Cleanness (0-5, required):</label>
+          <input
+            type="number"
+            name="cleanness"
+            value={formData.cleanness}
+            onChange={handleChange}
+            min="0"
+            max="5"
+            required
+          />
+        </div>
+        <div>
+          <label>Creativity (0-10, required):</label>
+          <input
+            type="number"
+            name="creativity"
+            value={formData.creativity}
+            onChange={handleChange}
+            min="0"
+            max="10"
+            required
+          />
+        </div>
+        <div>
+          <label>Presentation (0-10, required):</label>
+          <input
+            type="number"
+            name="presentation"
+            value={formData.presentation}
+            onChange={handleChange}
+            min="0"
+            max="10"
+            required
+          />
+        </div>
+        <div>
+          <label>Additional Points (0-15, optional):</label>
+          <input
+            type="number"
+            name="additionalPoints"
+            value={formData.additionalPoints}
+            onChange={handleChange}
+            min="0"
+            max="15"
+          />
+        </div>
+        <button type="submit">Add Person</button>
+      </form>
 
-const styles = {
-    container: {
-        fontFamily: "Arial, sans-serif",
-        maxWidth: "600px",
-        margin: "20px auto",
-        padding: "20px",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-        backgroundColor: "#f9f9f9",
-    },
-    title: {
-        textAlign: "center",
-        color: "#333",
-        marginBottom: "20px",
-    },
-    form: {
-        display: "flex",
-        flexDirection: "column",
-        gap: "10px",
-        marginBottom: "20px",
-    },
-    input: {
-        padding: "10px",
-        border: "1px solid #ccc",
-        borderRadius: "4px",
-        fontSize: "16px",
-        color: "#000", // Text color
-        backgroundColor: "#f0f8ff", // Light blue background
-    },
-    button: {
-        padding: "10px",
-        backgroundColor: "#4CAF50",
-        color: "white",
-        border: "none",
-        borderRadius: "4px",
-        cursor: "pointer",
-        fontSize: "16px",
-    },
-    deleteButton: {
-        marginLeft: "10px",
-        padding: "5px 10px",
-        backgroundColor: "#ff4d4d",
-        color: "white",
-        border: "none",
-        borderRadius: "4px",
-        cursor: "pointer",
-        fontSize: "14px",
-    },
-    list: {
-        listStyle: "none",
-        padding: 0,
-        marginTop: "10px",
-    },
-    listItem: {
-        padding: "10px",
-        borderBottom: "1px solid #ddd",
-        backgroundColor: "#fff",
-        marginBottom: "5px",
-        borderRadius: "4px",
-        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
-    },
-    listText: {
-        fontSize: "16px",
-        color: "#333",
-    },
-};
+      <h2>People List</h2>
+      <ul>
+        {people.map(person => (
+          <li key={person._id}>
+            {person.name} – Difficulty: {person.difficulty}, Cleanness: {person.cleanness}, Creativity: {person.creativity}, Presentation: {person.presentation}, Additional Points: {person.additionalPoints ?? "N/A"}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default App;
