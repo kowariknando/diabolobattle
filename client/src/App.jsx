@@ -11,11 +11,13 @@ function App() {
   });
   const [people, setPeople] = useState([]);
 
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Handle form submission to add a new person
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -32,7 +34,6 @@ function App() {
     }
 
     try {
-      // Hardcode the backend URL here
       const response = await fetch("http://localhost:5000/people/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -69,14 +70,32 @@ function App() {
     }
   };
 
+  // Fetch all people from the server
   const fetchPeople = async () => {
     try {
-      // Hardcode the backend URL here
       const response = await fetch("http://localhost:5000/people/all");
       const data = await response.json();
       setPeople(data);
     } catch (error) {
       console.error("Error fetching people:", error);
+    }
+  };
+
+  // New: Delete a person by ID
+  const handleDelete = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:5000/people/delete/${id}`, {
+        method: "DELETE"
+      });
+      if (response.ok) {
+        // Update state by filtering out the deleted person
+        setPeople((prevPeople) => prevPeople.filter((person) => person._id !== id));
+      } else {
+        const errorData = await response.json();
+        alert("Error deleting person: " + errorData.message);
+      }
+    } catch (error) {
+      alert("Error deleting person: " + error.message);
     }
   };
 
@@ -164,10 +183,8 @@ function App() {
       <ul>
         {people.map((person) => (
           <li key={person._id}>
-            {person.name} – Difficulty: {person.difficulty}, Cleanness:{" "}
-            {person.cleanness}, Creativity: {person.creativity}, Presentation:{" "}
-            {person.presentation}, Additional Points:{" "}
-            {person.additionalPoints ?? "N/A"}
+            {person.name} – Difficulty: {person.difficulty}, Cleanness: {person.cleanness}, Creativity: {person.creativity}, Presentation: {person.presentation}, Additional Points: {person.additionalPoints ?? "N/A"}, Total: {person.total}
+            <button onClick={() => handleDelete(person._id)}>Delete</button>
           </li>
         ))}
       </ul>
