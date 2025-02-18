@@ -1,31 +1,24 @@
-require("dotenv").config();
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
-const personRoutes = require("./routes/personRoutes");
+// server/server.js
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const authRoutes = require('./routes/auth');
+const personsRoutes = require('./routes/persons'); // if used
 
 const app = express();
-
-// Middleware
 app.use(express.json());
 app.use(cors());
 
-// Use /people prefix
-app.use("/people", personRoutes);
+// Connect to MongoDB (make sure your MongoDB is running)
+mongoose.connect('mongodb://localhost/diabolobattle', {
+  // Options can be omitted if using Node MongoDB Driver v4+
+})
+  .then(() => console.log('MongoDB connected'))
+  .catch(err => console.error(err));
 
-// Connect to MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("Connected to MongoDB"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+// Mount the routes
+app.use('/api/auth', authRoutes);
+app.use('/api/persons', personsRoutes); // if you have person routes
 
-// Basic API route
-app.get("/", (req, res) => {
-  res.send("Backend is running!");
-});
-
-// Start the server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

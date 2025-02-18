@@ -1,194 +1,39 @@
-import React, { useState, useEffect } from "react";
+// client/src/App.jsx
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Login from './components/Login.jsx';
+import Register from './components/Register.jsx';
+import PersonsPage from './components/PersonsPage.jsx';
 
 function App() {
-  const [formData, setFormData] = useState({
-    name: "",
-    difficulty: "",
-    cleanness: "",
-    creativity: "",
-    presentation: "",
-    additionalPoints: ""
-  });
-  const [people, setPeople] = useState([]);
+  const [token, setToken] = useState(null);
+  const [user, setUser] = useState(null);
 
-  // Handle input changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const logout = () => {
+    setToken(null);
+    setUser(null);
   };
 
-  // Handle form submission to add a new person
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validate required fields
-    if (
-      !formData.name ||
-      formData.difficulty === "" ||
-      formData.cleanness === "" ||
-      formData.creativity === "" ||
-      formData.presentation === ""
-    ) {
-      alert("Please fill in all required fields.");
-      return;
-    }
-
-    try {
-      const response = await fetch("http://localhost:5000/people/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          difficulty: Number(formData.difficulty),
-          cleanness: Number(formData.cleanness),
-          creativity: Number(formData.creativity),
-          presentation: Number(formData.presentation),
-          additionalPoints: formData.additionalPoints
-            ? Number(formData.additionalPoints)
-            : undefined
-        })
-      });
-
-      if (response.ok) {
-        const newPerson = await response.json();
-        setPeople((prevPeople) => [...prevPeople, newPerson]);
-        // Reset form
-        setFormData({
-          name: "",
-          difficulty: "",
-          cleanness: "",
-          creativity: "",
-          presentation: "",
-          additionalPoints: ""
-        });
-      } else {
-        const errorData = await response.json();
-        alert("Error: " + errorData.message);
-      }
-    } catch (error) {
-      alert("Error: " + error.message);
-    }
+  // A simple private route wrapper
+  const PrivateRoute = ({ children }) => {
+    return token ? children : <Navigate to="/login" />;
   };
-
-  // Fetch all people from the server
-  const fetchPeople = async () => {
-    try {
-      const response = await fetch("http://localhost:5000/people/all");
-      const data = await response.json();
-      setPeople(data);
-    } catch (error) {
-      console.error("Error fetching people:", error);
-    }
-  };
-
-  // New: Delete a person by ID
-  const handleDelete = async (id) => {
-    try {
-      const response = await fetch(`http://localhost:5000/people/delete/${id}`, {
-        method: "DELETE"
-      });
-      if (response.ok) {
-        // Update state by filtering out the deleted person
-        setPeople((prevPeople) => prevPeople.filter((person) => person._id !== id));
-      } else {
-        const errorData = await response.json();
-        alert("Error deleting person: " + errorData.message);
-      }
-    } catch (error) {
-      alert("Error deleting person: " + error.message);
-    }
-  };
-
-  useEffect(() => {
-    fetchPeople();
-  }, []);
 
   return (
-    <div>
-      <h1>Diabolo Battle - Add Person</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Name (required):</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div>
-          <label>Difficulty (0-10, required):</label>
-          <input
-            type="number"
-            name="difficulty"
-            value={formData.difficulty}
-            onChange={handleChange}
-            min="0"
-            max="10"
-            required
-          />
-        </div>
-        <div>
-          <label>Cleanness (0-5, required):</label>
-          <input
-            type="number"
-            name="cleanness"
-            value={formData.cleanness}
-            onChange={handleChange}
-            min="0"
-            max="5"
-            required
-          />
-        </div>
-        <div>
-          <label>Creativity (0-10, required):</label>
-          <input
-            type="number"
-            name="creativity"
-            value={formData.creativity}
-            onChange={handleChange}
-            min="0"
-            max="10"
-            required
-          />
-        </div>
-        <div>
-          <label>Presentation (0-10, required):</label>
-          <input
-            type="number"
-            name="presentation"
-            value={formData.presentation}
-            onChange={handleChange}
-            min="0"
-            max="10"
-            required
-          />
-        </div>
-        <div>
-          <label>Additional Points (0-15, optional):</label>
-          <input
-            type="number"
-            name="additionalPoints"
-            value={formData.additionalPoints}
-            onChange={handleChange}
-            min="0"
-            max="15"
-          />
-        </div>
-        <button type="submit">Add Person</button>
-      </form>
-
-      <h2>People List</h2>
-      <ul>
-        {people.map((person) => (
-          <li key={person._id}>
-            {person.name} – Difficulty: {person.difficulty}, Cleanness: {person.cleanness}, Creativity: {person.creativity}, Presentation: {person.presentation}, Additional Points: {person.additionalPoints ?? "N/A"}, Total: {person.total}
-            <button onClick={() => handleDelete(person._id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <PersonsPage token={token} user={user} logout={logout} />
+            </PrivateRoute>
+          }
+        />
+        <Route path="/login" element={<Login setToken={setToken} setUser={setUser} />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+    </Router>
   );
 }
 
