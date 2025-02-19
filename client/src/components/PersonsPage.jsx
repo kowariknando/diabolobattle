@@ -1,289 +1,171 @@
 // client/src/components/PersonsPage.jsx
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { Container, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Box } from '@mui/material';
 
 function PersonsPage({ token, user, logout }) {
   const [persons, setPersons] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [newPerson, setNewPerson] = useState({
-    name: '',
-    difficulty: 1,
-    cleanness: 1,
-    creativity: 1,
-    presentation: 1,
-    additionalPoints: 0
-  });
+  const [name, setName] = useState('');
+  const [difficulty, setDifficulty] = useState(1);
+  const [cleanliness, setCleanliness] = useState(1);
+  const [creativity, setCreativity] = useState(1);
+  const [presentation, setPresentation] = useState(1);
+  const [additionalPoints, setAdditionalPoints] = useState(0);
+  const [users, setUsers] = useState([]); // For admin user management
 
-  // Fetch persons from the backend
-  const fetchPersons = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/api/persons', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setPersons(res.data);
-    } catch (err) {
-      console.error(err);
-      alert('Error fetching persons');
-    }
-  };
-
-  // Fetch all users (admin only)
-  const fetchUsers = async () => {
-    try {
-      const res = await axios.get('http://localhost:5000/api/users', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUsers(res.data);
-    } catch (err) {
-      console.error(err);
-      alert('Error fetching users');
-    }
-  };
-
+  // Fetch persons
   useEffect(() => {
-    fetchPersons();
-    if (user && user.role === 'admin') {
-      fetchUsers();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    fetch('http://localhost:5000/api/persons', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => setPersons(data))
+      .catch(err => console.error('Error fetching persons:', err));
 
-  // Handler for adding a new person
-  const handleAddPerson = async (e) => {
-    e.preventDefault();
-    try {
-      await axios.post(
-        'http://localhost:5000/api/persons',
-        newPerson,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchPersons();
-      // Reset form fields
-      setNewPerson({
-        name: '',
-        difficulty: 1,
-        cleanness: 1,
-        creativity: 1,
-        presentation: 1,
-        additionalPoints: 0
-      });
-    } catch (err) {
-      console.error(err);
-      alert('Error adding person');
+    // Fetch users (only for admins)
+    if (user?.role === 'admin') {
+      fetch('http://localhost:5000/api/users', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => setUsers(data))
+        .catch(err => console.error('Error fetching users:', err));
     }
+  }, [token, user]);
+
+  // Add a new person
+  const handleAddPerson = () => {
+    fetch('http://localhost:5000/api/persons', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ name, difficulty, cleanliness, creativity, presentation, additionalPoints })
+    })
+      .then(res => res.json())
+      .then(data => {
+        setPersons([...persons, data]);
+        setName('');
+        setDifficulty(1);
+        setCleanliness(1);
+        setCreativity(1);
+        setPresentation(1);
+        setAdditionalPoints(0);
+      })
+      .catch(err => console.error('Error adding person:', err));
   };
 
-  // Handler for deleting a person (admin/premium only)
-  const handleDeletePerson = async (id) => {
-    try {
-      await axios.delete(`http://localhost:5000/api/persons/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchPersons();
-    } catch (err) {
-      console.error(err);
-      alert('Error deleting person');
-    }
+  // Delete a person
+  const handleDeletePerson = (id) => {
+    fetch(`http://localhost:5000/api/persons/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(() => setPersons(persons.filter(person => person._id !== id)))
+      .catch(err => console.error('Error deleting person:', err));
   };
 
-  // Handler for deleting a user (admin only)
-  const handleDeleteUser = async (id) => {
-    try {
-      await axios.delete(`http://localhost:5000/api/users/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchUsers();
-    } catch (err) {
-      console.error(err);
-      alert('Error deleting user');
-    }
+  // Delete a user (admin only)
+  const handleDeleteUser = (id) => {
+    fetch(`http://localhost:5000/api/users/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(() => setUsers(users.filter(user => user._id !== id)))
+      .catch(err => console.error('Error deleting user:', err));
   };
-
-  // Compute total points for a person (ensuring additionalPoints defaults to 0)
-  const getTotalPoints = (person) => {
-    return (
-      person.difficulty +
-      person.cleanness +
-      person.creativity +
-      person.presentation +
-      (person.additionalPoints ?? 0)
-    );
-  };
-
-  // Create a sorted copy of persons (sorted by total points descending)
-  const sortedPersons = [...persons].sort((a, b) => getTotalPoints(b) - getTotalPoints(a));
 
   return (
-    <div style={{ padding: '1rem' }}>
-      {/* Header Section with Welcome message and Logout button at the top right */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-          marginBottom: '1rem'
-        }}
-      >
-        <span style={{ marginRight: '1rem' }}>
-          Welcome, {user?.username}!
-        </span>
-        <button onClick={logout}>Logout</button>
-      </div>
+    <Container sx={{ mt: 4 }}>
+      <Typography variant="h4" sx={{ mb: 2, color: 'primary.main' }}>
+        Welcome, {user?.username}! ({user?.role})
+      </Typography>
 
-      <h1>Diabolo Battle - Add Person</h1>
+      {/* Logout Button */}
+      <Button variant="contained" color="secondary" onClick={logout} sx={{ mb: 2 }}>
+        Logout
+      </Button>
 
-      {/* Add Person Form for Admin/Premium users */}
+      {/* Add Person Section (Visible only to Admin and Premium Users) */}
       {(user?.role === 'admin' || user?.role === 'premium') && (
-        <div>
-          <form onSubmit={handleAddPerson} style={{ marginBottom: '1rem' }}>
-            <label>
-              Name (required):
-              <input
-                type="text"
-                value={newPerson.name}
-                onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })}
-                required
-              />
-            </label>
-            <br />
-            <label>
-              Difficulty (0-10, required):
-              <input
-                type="number"
-                min="0"
-                max="10"
-                value={newPerson.difficulty}
-                onChange={(e) => setNewPerson({ ...newPerson, difficulty: +e.target.value })}
-                required
-              />
-            </label>
-            <br />
-            <label>
-              Cleanness (0-5, required):
-              <input
-                type="number"
-                min="0"
-                max="5"
-                value={newPerson.cleanness}
-                onChange={(e) => setNewPerson({ ...newPerson, cleanness: +e.target.value })}
-                required
-              />
-            </label>
-            <br />
-            <label>
-              Creativity (0-10, required):
-              <input
-                type="number"
-                min="0"
-                max="10"
-                value={newPerson.creativity}
-                onChange={(e) => setNewPerson({ ...newPerson, creativity: +e.target.value })}
-                required
-              />
-            </label>
-            <br />
-            <label>
-              Presentation (0-10, required):
-              <input
-                type="number"
-                min="0"
-                max="10"
-                value={newPerson.presentation}
-                onChange={(e) => setNewPerson({ ...newPerson, presentation: +e.target.value })}
-                required
-              />
-            </label>
-            <br />
-            <label>
-              Additional Points (0-15, optional):
-              <input
-                type="number"
-                min="0"
-                max="15"
-                value={newPerson.additionalPoints}
-                onChange={(e) =>
-                  setNewPerson({ ...newPerson, additionalPoints: +e.target.value || 0 })
-                }
-              />
-            </label>
-            <br />
-            <button type="submit">Add Person</button>
-          </form>
-        </div>
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Typography variant="h5" sx={{ mb: 2 }}>Add New Person</Typography>
+          <TextField label="Name" fullWidth value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
+          <TextField label="Difficulty" type="number" fullWidth value={difficulty} onChange={(e) => setDifficulty(Number(e.target.value))} sx={{ mb: 2 }} />
+          <TextField label="Cleanliness" type="number" fullWidth value={cleanliness} onChange={(e) => setCleanliness(Number(e.target.value))} sx={{ mb: 2 }} />
+          <TextField label="Creativity" type="number" fullWidth value={creativity} onChange={(e) => setCreativity(Number(e.target.value))} sx={{ mb: 2 }} />
+          <TextField label="Presentation" type="number" fullWidth value={presentation} onChange={(e) => setPresentation(Number(e.target.value))} sx={{ mb: 2 }} />
+          <TextField label="Additional Points" type="number" fullWidth value={additionalPoints} onChange={(e) => setAdditionalPoints(Number(e.target.value))} sx={{ mb: 2 }} />
+          <Button variant="contained" color="primary" onClick={handleAddPerson}>
+            Add Person
+          </Button>
+        </Paper>
       )}
 
-      {/* People List Table */}
-      <h2>People List</h2>
-      {sortedPersons.length === 0 ? (
-        <p>No persons found.</p>
-      ) : (
-        <table border="1" cellPadding="5" style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              <th>Position</th>
-              <th>Name</th>
-              <th>Difficulty</th>
-              <th>Cleanness</th>
-              <th>Creativity</th>
-              <th>Presentation</th>
-              <th>Additional Points</th>
-              <th>Total Points</th>
-              {(user?.role === 'admin' || user?.role === 'premium') && <th>Actions</th>}
-            </tr>
-          </thead>
-          <tbody>
-            {sortedPersons.map((person, index) => (
-              <tr key={person._id}>
-                <td>{index + 1}</td>
-                <td>{person.name}</td>
-                <td>{person.difficulty}</td>
-                <td>{person.cleanness}</td>
-                <td>{person.creativity}</td>
-                <td>{person.presentation}</td>
-                <td>{person.additionalPoints ?? 0}</td>
-                <td>{getTotalPoints(person)}</td>
+      {/* People List */}
+      <Typography variant="h5" sx={{ mb: 2 }}>People List</Typography>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Name</TableCell>
+              <TableCell>Difficulty</TableCell>
+              <TableCell>Cleanliness</TableCell>
+              <TableCell>Creativity</TableCell>
+              <TableCell>Presentation</TableCell>
+              <TableCell>Total Points</TableCell>
+              {(user?.role === 'admin' || user?.role === 'premium') && <TableCell>Actions</TableCell>}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {persons.map((person) => (
+              <TableRow key={person._id}>
+                <TableCell>{person.name}</TableCell>
+                <TableCell>{person.difficulty}</TableCell>
+                <TableCell>{person.cleanliness}</TableCell>
+                <TableCell>{person.creativity}</TableCell>
+                <TableCell>{person.presentation}</TableCell>
+                <TableCell>{person.difficulty + person.cleanliness + person.creativity + person.presentation + (person.additionalPoints || 0)}</TableCell>
                 {(user?.role === 'admin' || user?.role === 'premium') && (
-                  <td>
-                    <button onClick={() => handleDeletePerson(person._id)}>Delete</button>
-                  </td>
+                  <TableCell>
+                    <Button variant="contained" color="error" onClick={() => handleDeletePerson(person._id)}>Delete</Button>
+                  </TableCell>
                 )}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      )}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-      {/* Admin-only: Users Management Table */}
+      {/* User Management (Only for Admins) */}
       {user?.role === 'admin' && (
-        <div style={{ marginTop: '2rem' }}>
-          <h2>Users List (Admin Only)</h2>
-          {users.length === 0 ? (
-            <p>No users found.</p>
-          ) : (
-            <table border="1" cellPadding="5" style={{ borderCollapse: 'collapse', width: '100%' }}>
-              <thead>
-                <tr>
-                  <th>Username</th>
-                  <th>Role</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h5" sx={{ mb: 2 }}>Manage Users</Typography>
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Username</TableCell>
+                  <TableCell>Role</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {users.map((u) => (
-                  <tr key={u._id}>
-                    <td>{u.username}</td>
-                    <td>{u.role}</td>
-                    <td>
-                      <button onClick={() => handleDeleteUser(u._id)}>Delete</button>
-                    </td>
-                  </tr>
+                  <TableRow key={u._id}>
+                    <TableCell>{u.username}</TableCell>
+                    <TableCell>{u.role}</TableCell>
+                    <TableCell>
+                      <Button variant="contained" color="error" onClick={() => handleDeleteUser(u._id)}>Delete</Button>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
       )}
-    </div>
+    </Container>
   );
 }
 

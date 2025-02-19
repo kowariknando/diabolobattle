@@ -1,6 +1,7 @@
 // client/src/App.jsx
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import Home from './components/Home.jsx';
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import PersonsPage from './components/PersonsPage.jsx';
@@ -14,7 +15,7 @@ function App() {
     setUser(null);
   };
 
-  // A simple private route wrapper
+  // Private route for authenticated pages
   const PrivateRoute = ({ children }) => {
     return token ? children : <Navigate to="/login" />;
   };
@@ -22,8 +23,9 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route
-          path="/"
+          path="/persons"
           element={
             <PrivateRoute>
               <PersonsPage token={token} user={user} logout={logout} />

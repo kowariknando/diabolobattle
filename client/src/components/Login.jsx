@@ -1,59 +1,71 @@
+// client/src/components/Login.jsx
 import React, { useState } from 'react';
-import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { Container, TextField, Button, Typography, Box, Paper } from '@mui/material';
 
 function Login({ setToken, setUser }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const navigate = useNavigate(); // Hook to handle navigation
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
     try {
-      // Use absolute URL to reach your backend
-      const res = await axios.post('http://localhost:5000/api/auth/login', {
-        username,
-        password
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
       });
-      setToken(res.data.token);
-      // Decode token payload (for demonstration purposes)
-      const payload = JSON.parse(atob(res.data.token.split('.')[1]));
-      setUser(payload);
-      // Redirect to PersonsPage after successful login
-      navigate('/');
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // Store the token and user info
+      setToken(data.token);
+      setUser(data.user);
+
+      // Redirect to the Add Person page
+      navigate('/persons');
+
     } catch (err) {
-      console.error(err);
-      alert('Login failed: Invalid credentials');
+      setError(err.message);
     }
   };
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <h2>Login</h2>
-      <form onSubmit={handleSubmit} style={{ marginBottom: '1rem' }}>
-        <div>
-          <label>Username:</label>
-          <input
+    <Container maxWidth="xs">
+      <Paper elevation={3} sx={{ p: 4, mt: 8, textAlign: 'center' }}>
+        <Typography variant="h4" sx={{ mb: 2 }}>Login</Typography>
+        {error && <Typography color="error">{error}</Typography>}
+        <form onSubmit={handleLogin}>
+          <TextField
+            label="Username"
+            variant="outlined"
+            fullWidth
+            margin="normal"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            required
           />
-        </div>
-        <div>
-          <label>Password:</label>
-          <input
+          <TextField
+            label="Password"
             type="password"
+            variant="outlined"
+            fullWidth
+            margin="normal"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
           />
-        </div>
-        <button type="submit">Log In</button>
-      </form>
-      <p>
-        Don't have an account? <Link to="/register">Register here</Link>
-      </p>
-    </div>
+          <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>
+            Log In
+          </Button>
+        </form>
+      </Paper>
+    </Container>
   );
 }
 
