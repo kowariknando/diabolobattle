@@ -1,8 +1,10 @@
+// client/src/components/PersonsPage.jsx
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 function PersonsPage({ token, user, logout }) {
   const [persons, setPersons] = useState([]);
+  const [users, setUsers] = useState([]);
   const [newPerson, setNewPerson] = useState({
     name: '',
     difficulty: 1,
@@ -12,10 +14,9 @@ function PersonsPage({ token, user, logout }) {
     additionalPoints: 0
   });
 
-  // Fetch the list of persons
+  // Fetch persons from the backend
   const fetchPersons = async () => {
     try {
-      // Use the absolute URL or a proxy to reach your backend
       const res = await axios.get('http://localhost:5000/api/persons', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -26,12 +27,28 @@ function PersonsPage({ token, user, logout }) {
     }
   };
 
+  // Fetch all users (admin only)
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUsers(res.data);
+    } catch (err) {
+      console.error(err);
+      alert('Error fetching users');
+    }
+  };
+
   useEffect(() => {
     fetchPersons();
+    if (user && user.role === 'admin') {
+      fetchUsers();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user]);
 
-  // Add a person (admin/premium only)
+  // Handler for adding a new person
   const handleAddPerson = async (e) => {
     e.preventDefault();
     try {
@@ -41,7 +58,7 @@ function PersonsPage({ token, user, logout }) {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       fetchPersons();
-      // Reset form
+      // Reset form fields
       setNewPerson({
         name: '',
         difficulty: 1,
@@ -56,7 +73,7 @@ function PersonsPage({ token, user, logout }) {
     }
   };
 
-  // Delete a person (admin/premium only)
+  // Handler for deleting a person (admin/premium only)
   const handleDeletePerson = async (id) => {
     try {
       await axios.delete(`http://localhost:5000/api/persons/${id}`, {
@@ -69,12 +86,53 @@ function PersonsPage({ token, user, logout }) {
     }
   };
 
+  // Handler for deleting a user (admin only)
+  const handleDeleteUser = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting user');
+    }
+  };
+
+  // Compute total points for a person (ensuring additionalPoints defaults to 0)
+  const getTotalPoints = (person) => {
+    return (
+      person.difficulty +
+      person.cleanness +
+      person.creativity +
+      person.presentation +
+      (person.additionalPoints ?? 0)
+    );
+  };
+
+  // Create a sorted copy of persons (sorted by total points descending)
+  const sortedPersons = [...persons].sort((a, b) => getTotalPoints(b) - getTotalPoints(a));
+
   return (
     <div style={{ padding: '1rem' }}>
-      <h1>Diabolo Battle - Add Person</h1>
-      <h2>Welcome, {user?.username}!</h2>
+      {/* Header Section with Welcome message and Logout button at the top right */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          marginBottom: '1rem'
+        }}
+      >
+        <span style={{ marginRight: '1rem' }}>
+          Welcome, {user?.username}!
+        </span>
+        <button onClick={logout}>Logout</button>
+      </div>
 
-      {/* Only show Add Person form if user is admin or premium */}
+      <h1>Diabolo Battle - Add Person</h1>
+
+      {/* Add Person Form for Admin/Premium users */}
       {(user?.role === 'admin' || user?.role === 'premium') && (
         <div>
           <form onSubmit={handleAddPerson} style={{ marginBottom: '1rem' }}>
@@ -143,7 +201,9 @@ function PersonsPage({ token, user, logout }) {
                 min="0"
                 max="15"
                 value={newPerson.additionalPoints}
-                onChange={(e) => setNewPerson({ ...newPerson, additionalPoints: +e.target.value })}
+                onChange={(e) =>
+                  setNewPerson({ ...newPerson, additionalPoints: +e.target.value || 0 })
+                }
               />
             </label>
             <br />
@@ -152,26 +212,77 @@ function PersonsPage({ token, user, logout }) {
         </div>
       )}
 
+      {/* People List Table */}
       <h2>People List</h2>
-      <ul>
-        {persons.map((person) => (
-          <li key={person._id} style={{ marginBottom: '0.5rem' }}>
-            <strong>{person.name}</strong> (Difficulty: {person.difficulty},
-            Cleanness: {person.cleanness}, Creativity: {person.creativity},
-            Presentation: {person.presentation}, Additional Points: {person.additionalPoints})
-            {(user?.role === 'admin' || user?.role === 'premium') && (
-              <button
-                onClick={() => handleDeletePerson(person._id)}
-                style={{ marginLeft: '1rem' }}
-              >
-                Delete
-              </button>
-            )}
-          </li>
-        ))}
-      </ul>
+      {sortedPersons.length === 0 ? (
+        <p>No persons found.</p>
+      ) : (
+        <table border="1" cellPadding="5" style={{ borderCollapse: 'collapse', width: '100%' }}>
+          <thead>
+            <tr>
+              <th>Position</th>
+              <th>Name</th>
+              <th>Difficulty</th>
+              <th>Cleanness</th>
+              <th>Creativity</th>
+              <th>Presentation</th>
+              <th>Additional Points</th>
+              <th>Total Points</th>
+              {(user?.role === 'admin' || user?.role === 'premium') && <th>Actions</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedPersons.map((person, index) => (
+              <tr key={person._id}>
+                <td>{index + 1}</td>
+                <td>{person.name}</td>
+                <td>{person.difficulty}</td>
+                <td>{person.cleanness}</td>
+                <td>{person.creativity}</td>
+                <td>{person.presentation}</td>
+                <td>{person.additionalPoints ?? 0}</td>
+                <td>{getTotalPoints(person)}</td>
+                {(user?.role === 'admin' || user?.role === 'premium') && (
+                  <td>
+                    <button onClick={() => handleDeletePerson(person._id)}>Delete</button>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
-      <button onClick={logout}>Logout</button>
+      {/* Admin-only: Users Management Table */}
+      {user?.role === 'admin' && (
+        <div style={{ marginTop: '2rem' }}>
+          <h2>Users List (Admin Only)</h2>
+          {users.length === 0 ? (
+            <p>No users found.</p>
+          ) : (
+            <table border="1" cellPadding="5" style={{ borderCollapse: 'collapse', width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u._id}>
+                    <td>{u.username}</td>
+                    <td>{u.role}</td>
+                    <td>
+                      <button onClick={() => handleDeleteUser(u._id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 }
