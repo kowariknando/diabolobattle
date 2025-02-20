@@ -1,18 +1,26 @@
 // client/src/components/PersonsPage.jsx
 import React, { useState, useEffect } from 'react';
-import { Container, Typography, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Box } from '@mui/material';
+import {
+  Container, Typography, Button, Table, TableBody,
+  TableCell, TableContainer, TableHead, TableRow,
+  Paper, IconButton, TextField
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import NavBar from './NavBar';  // ✅ Import NavBar
+import Footer from './Footer';  // ✅ Import Footer
 
 function PersonsPage({ token, user, logout }) {
   const [persons, setPersons] = useState([]);
+  const [users, setUsers] = useState([]);
   const [name, setName] = useState('');
-  const [difficulty, setDifficulty] = useState(1);
-  const [cleanliness, setCleanliness] = useState(1);
-  const [creativity, setCreativity] = useState(1);
-  const [presentation, setPresentation] = useState(1);
-  const [additionalPoints, setAdditionalPoints] = useState(0);
-  const [users, setUsers] = useState([]); // For admin user management
+  const [difficulty, setDifficulty] = useState('');
+  const [cleanness, setCleanness] = useState('');
+  const [creativity, setCreativity] = useState('');
+  const [presentation, setPresentation] = useState('');
+  const [additionalPoints, setAdditionalPoints] = useState('');
+  const [usersError, setUsersError] = useState(null);
 
-  // Fetch persons
+  // Fetch persons and users
   useEffect(() => {
     fetch('http://localhost:5000/api/persons', {
       headers: { Authorization: `Bearer ${token}` }
@@ -21,36 +29,53 @@ function PersonsPage({ token, user, logout }) {
       .then(data => setPersons(data))
       .catch(err => console.error('Error fetching persons:', err));
 
-    // Fetch users (only for admins)
     if (user?.role === 'admin') {
       fetch('http://localhost:5000/api/users', {
         headers: { Authorization: `Bearer ${token}` }
       })
-        .then(res => res.json())
-        .then(data => setUsers(data))
-        .catch(err => console.error('Error fetching users:', err));
+        .then(async (res) => {
+          if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error(errorData.message || 'Failed to fetch users');
+          }
+          return res.json();
+        })
+        .then(data => setUsers(Array.isArray(data) ? data : []))
+        .catch(err => {
+          console.error('Error fetching users:', err);
+          setUsersError(err.message);
+        });
     }
   }, [token, user]);
 
   // Add a new person
   const handleAddPerson = () => {
+    const personData = {
+      name,
+      difficulty: Number(difficulty),
+      cleanness: Number(cleanness),
+      creativity: Number(creativity),
+      presentation: Number(presentation),
+      additionalPoints: additionalPoints ? Number(additionalPoints) : 0,
+    };
+
     fetch('http://localhost:5000/api/persons', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ name, difficulty, cleanliness, creativity, presentation, additionalPoints })
+      body: JSON.stringify(personData)
     })
       .then(res => res.json())
-      .then(data => {
-        setPersons([...persons, data]);
+      .then(newPerson => {
+        setPersons([...persons, newPerson]);
         setName('');
-        setDifficulty(1);
-        setCleanliness(1);
-        setCreativity(1);
-        setPresentation(1);
-        setAdditionalPoints(0);
+        setDifficulty('');
+        setCleanness('');
+        setCreativity('');
+        setPresentation('');
+        setAdditionalPoints('');
       })
       .catch(err => console.error('Error adding person:', err));
   };
@@ -65,7 +90,7 @@ function PersonsPage({ token, user, logout }) {
       .catch(err => console.error('Error deleting person:', err));
   };
 
-  // Delete a user (admin only)
+  // Delete a user (Premium users only)
   const handleDeleteUser = (id) => {
     fetch(`http://localhost:5000/api/users/${id}`, {
       method: 'DELETE',
@@ -76,96 +101,70 @@ function PersonsPage({ token, user, logout }) {
   };
 
   return (
-    <Container sx={{ mt: 4 }}>
-      <Typography variant="h4" sx={{ mb: 2, color: 'primary.main' }}>
-        Welcome, {user?.username}! ({user?.role})
-      </Typography>
+    <>
+      <NavBar />  {/* ✅ Add NavBar */}
+      <Container sx={{ mt: 4 }}>
+        <Typography variant="h4">Welcome, {user?.username}</Typography>
 
-      {/* Logout Button */}
-      <Button variant="contained" color="secondary" onClick={logout} sx={{ mb: 2 }}>
-        Logout
-      </Button>
+        <Button variant="contained" color="secondary" onClick={logout} sx={{ mb: 2 }}>
+          Logout
+        </Button>
 
-      {/* Add Person Section (Visible only to Admin and Premium Users) */}
-      {(user?.role === 'admin' || user?.role === 'premium') && (
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h5" sx={{ mb: 2 }}>Add New Person</Typography>
-          <TextField label="Name" fullWidth value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
-          <TextField label="Difficulty" type="number" fullWidth value={difficulty} onChange={(e) => setDifficulty(Number(e.target.value))} sx={{ mb: 2 }} />
-          <TextField label="Cleanliness" type="number" fullWidth value={cleanliness} onChange={(e) => setCleanliness(Number(e.target.value))} sx={{ mb: 2 }} />
-          <TextField label="Creativity" type="number" fullWidth value={creativity} onChange={(e) => setCreativity(Number(e.target.value))} sx={{ mb: 2 }} />
-          <TextField label="Presentation" type="number" fullWidth value={presentation} onChange={(e) => setPresentation(Number(e.target.value))} sx={{ mb: 2 }} />
-          <TextField label="Additional Points" type="number" fullWidth value={additionalPoints} onChange={(e) => setAdditionalPoints(Number(e.target.value))} sx={{ mb: 2 }} />
-          <Button variant="contained" color="primary" onClick={handleAddPerson}>
-            Add Person
-          </Button>
-        </Paper>
-      )}
+        {/* Add Person Section */}
+        {(user?.role === 'admin' || user?.role === 'premium') && (
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h5">Add New Person</Typography>
+            <TextField label="Name" fullWidth value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} />
+            <TextField label="Difficulty (0-10)" type="number" fullWidth value={difficulty} onChange={(e) => setDifficulty(e.target.value)} sx={{ mb: 2 }} />
+            <TextField label="Cleanness (0-5)" type="number" fullWidth value={cleanness} onChange={(e) => setCleanness(e.target.value)} sx={{ mb: 2 }} />
+            <TextField label="Creativity (0-10)" type="number" fullWidth value={creativity} onChange={(e) => setCreativity(e.target.value)} sx={{ mb: 2 }} />
+            <TextField label="Presentation (0-10)" type="number" fullWidth value={presentation} onChange={(e) => setPresentation(e.target.value)} sx={{ mb: 2 }} />
+            <TextField label="Additional Points (0-15)" type="number" fullWidth value={additionalPoints} onChange={(e) => setAdditionalPoints(e.target.value)} sx={{ mb: 2 }} />
+            <Button variant="contained" color="primary" onClick={handleAddPerson}>
+              Add Person
+            </Button>
+          </Paper>
+        )}
 
-      {/* People List */}
-      <Typography variant="h5" sx={{ mb: 2 }}>People List</Typography>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Difficulty</TableCell>
-              <TableCell>Cleanliness</TableCell>
-              <TableCell>Creativity</TableCell>
-              <TableCell>Presentation</TableCell>
-              <TableCell>Total Points</TableCell>
-              {(user?.role === 'admin' || user?.role === 'premium') && <TableCell>Actions</TableCell>}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {persons.map((person) => (
-              <TableRow key={person._id}>
-                <TableCell>{person.name}</TableCell>
-                <TableCell>{person.difficulty}</TableCell>
-                <TableCell>{person.cleanliness}</TableCell>
-                <TableCell>{person.creativity}</TableCell>
-                <TableCell>{person.presentation}</TableCell>
-                <TableCell>{person.difficulty + person.cleanliness + person.creativity + person.presentation + (person.additionalPoints || 0)}</TableCell>
-                {(user?.role === 'admin' || user?.role === 'premium') && (
-                  <TableCell>
-                    <Button variant="contained" color="error" onClick={() => handleDeletePerson(person._id)}>Delete</Button>
-                  </TableCell>
-                )}
+        {/* People List */}
+        <Typography variant="h5">People List</Typography>
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell>Difficulty</TableCell>
+                <TableCell>Cleanness</TableCell>
+                <TableCell>Creativity</TableCell>
+                <TableCell>Presentation</TableCell>
+                <TableCell>Total Points</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* User Management (Only for Admins) */}
-      {user?.role === 'admin' && (
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h5" sx={{ mb: 2 }}>Manage Users</Typography>
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Username</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell>Actions</TableCell>
+            </TableHead>
+            <TableBody>
+              {persons.map((person) => (
+                <TableRow key={person._id}>
+                  <TableCell>{person.name}</TableCell>
+                  <TableCell>{person.difficulty}</TableCell>
+                  <TableCell>{person.cleanness}</TableCell>
+                  <TableCell>{person.creativity}</TableCell>
+                  <TableCell>{person.presentation}</TableCell>
+                  <TableCell>{person.difficulty + person.cleanness + person.creativity + person.presentation}</TableCell>
+                  <TableCell>
+                    {(user?.role === 'admin' || user?.role === 'premium') && (
+                      <IconButton color="error" onClick={() => handleDeletePerson(person._id)}>
+                        <DeleteIcon />
+                      </IconButton>
+                    )}
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {users.map((u) => (
-                  <TableRow key={u._id}>
-                    <TableCell>{u.username}</TableCell>
-                    <TableCell>{u.role}</TableCell>
-                    <TableCell>
-                      <Button variant="contained" color="error" onClick={() => handleDeleteUser(u._id)}>Delete</Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      )}
-    </Container>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Container>
+      <Footer />  {/* ✅ Add Footer */}
+    </>
   );
 }
 

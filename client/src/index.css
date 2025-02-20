@@ -1,22 +1,57 @@
 /* client/src/index.css */
+
+/* Import MyFuturaLight (for normal text) */
 @font-face {
-  font-family: 'MyFutura';
-  src: url('/MyFutura.ttf') format('truetype');
+  font-family: 'MyFuturaLight';
+  src: url('/MyFuturaLight.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
 
+/* Import Futura (for bold headings) */
 @font-face {
-  font-family: 'MyFuturaLight';
-  src: url('/MyFuturaLight.ttf') format('truetype');
-  font-weight: 300;
+  font-family: 'FuturaBold';
+  src: url('/Futura.ttf') format('truetype');
+  font-weight: bold;
   font-style: normal;
 }
 
-/* Global styles */
+/* Global Styles */
 body {
   margin: 0;
-  font-family: 'MyFutura, sans-serif';
-  background-color: #BFBCCB; /* Your theme background */
-  color: #1B1B1B;            /* Dark text for contrast */
+  font-family: 'MyFuturaLight', sans-serif;
+  background-color: #F5F5F5; /* Light Background */
+  color: #1B1B1B; /* Dark Text */
+}
+
+/* Primary Color Elements */
+.primary {
+  color: #E84423; /* Accent Red */
+}
+
+/* Secondary Color Elements */
+.secondary {
+  color: #06BCC1; /* Highlight Blue */
+}
+
+/* Buttons */
+button {
+  background-color: #E84423; /* Red */
+  color: #FFFFFF; /* White Text */
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-family: 'FuturaBold', sans-serif; /* Bold Buttons */
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+button:hover {
+  background-color: #06BCC1; /* Blue */
+}
+
+/* Title Styling for Bold Headers */
+.bold-title {
+  font-family: 'FuturaBold', sans-serif;
+  font-weight: bold;
 }

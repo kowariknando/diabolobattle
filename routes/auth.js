@@ -1,65 +1,48 @@
+// mern-app/routes/auth.js
 const express = require('express');
-const router = express.Router();
-const User = require('../models/User'); // Ensure your User model exists in server/models/User.js
-const bcrypt = require('bcrypt'); // or use 'bcryptjs'
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here';
+const router = express.Router();
 
-// Registration route
+// Register Route
 router.post('/register', async (req, res) => {
-  const { username, password, role } = req.body;
-  try {
-    // Optionally, check if the user already exists
+    const { username, password, role } = req.body;
+
     const existingUser = await User.findOne({ username });
     if (existingUser) {
-      return res.status(400).json({ message: 'Username already exists' });
+        return res.status(400).json({ message: 'Username already exists' });
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ username, password: hashedPassword, role });
 
-    // Create the user (default role is 'regular' if not provided)
-    const newUser = new User({
-      username,
-      password: hashedPassword,
-      role: role || 'regular'
-    });
-
-    await newUser.save();
-    return res.json({ message: 'User registered successfully' });
-  } catch (err) {
-    console.error(err);
-    // Check for duplicate key error (error code 11000)
-    if (err.code === 11000) {
-      return res.status(400).json({ message: 'Username already exists' });
+    try {
+        await newUser.save();
+        res.status(201).json({ message: 'User registered successfully' });
+    } catch (err) {
+        res.status(500).json({ message: 'Error creating user' });
     }
-    res.status(500).json({ message: 'Error registering user' });
-  }
 });
 
-// Login route
+// Login Route
 router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  try {
-    // Find the user by username
+    const { username, password } = req.body;
     const user = await User.findOne({ username });
+
     if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+        return res.status(400).json({ message: 'Invalid username or password' });
     }
-    // Compare the plain-text password with the hashed password in DB
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
+        return res.status(400).json({ message: 'Invalid username or password' });
     }
-    // Generate a JWT token if credentials are valid
-    const payload = { id: user._id, username: user.username, role: user.role };
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Server error' });
-  }
+
+    const token = jwt.sign({ id: user._id, role: user.role, username: user.username }, 'your_secret_key', { expiresIn: '1h' });
+
+    res.json({ token, user: { username: user.username, role: user.role } });
 });
 
 module.exports = router;

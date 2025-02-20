@@ -1,36 +1,35 @@
-// server/routes/users.js
+// mern-app/routes/users.js
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const authenticateToken = require('../middleware/auth'); // Make sure this file exists and works
+const auth = require('../middleware/auth');
 
-// GET /api/users - Retrieve all users (admin-only)
-router.get('/', authenticateToken, async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Access denied' });
-  }
-  try {
-    // Exclude sensitive fields like password
-    const users = await User.find({}, 'username role');
-    res.json(users);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error fetching users' });
-  }
+// Get all users (Admin only)
+router.get('/', auth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Forbidden: Admins only' });
+    }
+
+    try {
+        const users = await User.find().select('-password'); // Exclude passwords from response
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
-// DELETE /api/users/:id - Delete a user by ID (admin-only)
-router.delete('/:id', authenticateToken, async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Access denied' });
-  }
-  try {
-    await User.findByIdAndDelete(req.params.id);
-    res.json({ message: 'User deleted successfully' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Error deleting user' });
-  }
+// Delete a user (Premium users only)
+router.delete('/:id', auth, async (req, res) => {
+    if (req.user.role !== 'premium') {
+        return res.status(403).json({ message: 'Forbidden: Only Premium users can delete users.' });
+    }
+
+    try {
+        await User.findByIdAndDelete(req.params.id);
+        res.json({ message: 'User deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
 });
 
 module.exports = router;

@@ -5,21 +5,24 @@ import { Link } from 'react-router-dom';
 
 function NavBar() {
   return (
-    <AppBar position="sticky" color="primary">
+    <AppBar position="sticky" sx={{ backgroundColor: '#1B1B1B' }}> {/* Black Background */}
       <Toolbar>
+        {/* Logo and Title */}
         <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
           <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-            <img src="/logo.png" alt="Logo" style={{ height: 40, marginRight: 8 }} />
+            <img src="/logo_white_no_letters.png" alt="Logo" style={{ height: 50, marginRight: 8 }} />
           </Link>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: '#FFFFFF' }}>
             EJC Diabolo Battle
           </Typography>
         </Box>
-        <Button color="inherit" component={Link} to="/">Home</Button>
-        <Button color="inherit" component={Link} to="/about">About</Button>
-        <Button color="inherit" component={Link} to="/gallery">Gallery</Button>
-        <Button color="inherit" component={Link} to="/contact">Contact</Button>
-        <Button color="inherit" component={Link} to="/login">Login</Button>
+
+        {/* Navigation Links */}
+        <Button sx={{ color: '#FFFFFF' }} component={Link} to="/">Home</Button>
+        <Button sx={{ color: '#FFFFFF' }} component={Link} to="/about">About</Button>
+        <Button sx={{ color: '#FFFFFF' }} component={Link} to="/gallery">Gallery</Button>
+        <Button sx={{ color: '#FFFFFF' }} component={Link} to="/contact">Contact</Button>
+        <Button sx={{ color: '#FFFFFF' }} component={Link} to="/login">Login</Button>
       </Toolbar>
     </AppBar>
   );

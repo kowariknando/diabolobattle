@@ -1,105 +1,86 @@
 // client/src/components/Register.jsx
 import React, { useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import {
-  Container,
-  Box,
-  Typography,
-  TextField,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem
-} from '@mui/material';
+import { Container, TextField, Button, Typography, Paper, Box, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import NavBar from './NavBar';  // ✅ Import NavBar
+import Footer from './Footer';  // ✅ Import Footer
 
 function Register() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('regular');
-  const navigate = useNavigate();
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [role, setRole] = useState('regular'); // Default role is regular user
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', {
-        username,
-        password,
-        role
-      });
-      alert(res.data.message); // e.g. "User registered successfully"
-      navigate('/login'); // Redirect to login page after successful registration
-    } catch (err) {
-      console.error(err);
-      alert('Registration failed: ' + (err.response?.data.message || err.message));
-    }
-  };
+    const navigate = useNavigate();
 
-  return (
-    <Container maxWidth="sm" sx={{ mt: 8 }}>
-      <Typography
-        variant="h3"
-        component="h1"
-        sx={{ color: 'primary.main', fontWeight: 'bold', mb: 4 }}
-      >
-        Register
-      </Typography>
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        sx={{
-          backgroundColor: 'background.paper',
-          p: 4,
-          borderRadius: 2,
-          boxShadow: 3,
-        }}
-      >
-        <TextField
-          label="Username"
-          variant="outlined"
-          fullWidth
-          margin="normal"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <TextField
-          label="Password"
-          type="password"
-          variant="outlined"
-          fullWidth
-          margin="normal"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
 
-        {/* For testing, allow role selection */}
-        <FormControl fullWidth sx={{ mt: 2 }}>
-          <InputLabel id="role-label">Role (for testing)</InputLabel>
-          <Select
-            labelId="role-label"
-            label="Role (for testing)"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-          >
-            <MenuItem value="regular">Regular</MenuItem>
-            <MenuItem value="premium">Premium</MenuItem>
-            <MenuItem value="admin">Admin</MenuItem>
-          </Select>
-        </FormControl>
+        const response = await fetch('http://localhost:5000/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password, role }),
+        });
 
-        <Button
-          type="submit"
-          variant="contained"
-          sx={{ mt: 3 }}
-        >
-          Register
-        </Button>
-      </Box>
-    </Container>
-  );
+        const data = await response.json();
+
+        if (response.ok) {
+            setSuccess('Registration successful! Redirecting to login...');
+            setTimeout(() => navigate('/login'), 2000);
+        } else {
+            setError(data.message || 'Registration failed');
+        }
+    };
+
+    return (
+        <>
+            <NavBar />  {/* ✅ Add NavBar */}
+            <Container maxWidth="xs">
+                <Paper elevation={3} sx={{ p: 4, mt: 8, textAlign: 'center' }}>
+                    <Typography variant="h4" sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}>
+                        Register
+                    </Typography>
+                    {error && <Typography color="error">{error}</Typography>}
+                    {success && <Typography color="success.main">{success}</Typography>}
+                    <form onSubmit={handleRegister}>
+                        <TextField
+                            label="Username"
+                            variant="outlined"
+                            fullWidth
+                            margin="normal"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            required
+                        />
+                        <TextField
+                            label="Password"
+                            type="password"
+                            variant="outlined"
+                            fullWidth
+                            margin="normal"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                        <FormControl fullWidth sx={{ mt: 2 }}>
+                            <InputLabel>Role</InputLabel>
+                            <Select value={role} onChange={(e) => setRole(e.target.value)}>
+                                <MenuItem value="regular">Regular User</MenuItem>
+                                <MenuItem value="premium">Premium User</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 3 }}>
+                            Register
+                        </Button>
+                    </form>
+                </Paper>
+            </Container>
+            <Footer />  {/* ✅ Add Footer */}
+        </>
+    );
 }
 
 export default Register;
