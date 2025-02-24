@@ -6,15 +6,17 @@ import About from './components/About.jsx';
 import Login from './components/Login.jsx';
 import Register from './components/Register.jsx';
 import PersonsPage from './components/PersonsPage.jsx';
-import Gallery from './components/Gallery.jsx';  // ✅ Import Gallery Page
+import Gallery from './components/Gallery.jsx';
 
 function App() {
   const [token, setToken] = useState(null);
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // <-- We will now set this properly after login
 
   const logout = () => {
     setToken(null);
     setUser(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   const PrivateRoute = ({ children }) => {
@@ -26,10 +28,20 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
-        <Route path="/login" element={<Login setToken={setToken} />} />
+        <Route
+          path="/login"
+          element={<Login setToken={setToken} setUser={setUser} />}  // pass setUser
+        />
         <Route path="/register" element={<Register />} />
-        <Route path="/persons" element={<PrivateRoute><PersonsPage token={token} user={user} logout={logout} /></PrivateRoute>} />
-        <Route path="/gallery" element={<Gallery />} />  {/* ✅ Ensure this exists */}
+        <Route
+          path="/persons"
+          element={
+            <PrivateRoute>
+              <PersonsPage token={token} user={user} logout={logout} />
+            </PrivateRoute>
+          }
+        />
+        <Route path="/gallery" element={<Gallery />} />
       </Routes>
     </Router>
   );
