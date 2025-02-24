@@ -9,42 +9,60 @@ import NavBar from './NavBar';
 import Footer from './Footer';
 import { motion } from 'framer-motion';
 
+/**
+ * Use Vite's import.meta.glob to load images from 'src/assets/gallery_images' folder.
+ * The result is an object { [filePath]: Module }, where Module.default = actual image URL.
+ */
+function importAllImages() {
+  // Adjust this glob path if your folder name differs:
+  const imagesGlob = import.meta.glob('../assets/gallery_images/*.{png,jpg,jpeg,gif}', {
+    eager: true
+  });
+
+  const importedImages = [];
+  for (const path in imagesGlob) {
+    // Module object (or string) returned by Vite:
+    const moduleImport = imagesGlob[path];
+    // Extract the real image URL from moduleImport
+    const src = typeof moduleImport === 'string'
+      ? moduleImport             // sometimes it is already a string
+      : moduleImport.default;    // typical case: the real URL is in "default"
+
+    importedImages.push({
+      path, // relative file path (like '../assets/gallery_images/poster_2019.jpg')
+      src,
+    });
+  }
+  return importedImages;
+}
+
 function Gallery() {
   const [imagesByYear, setImagesByYear] = useState({});
-  const [selectedYear, setSelectedYear] = useState("all");
+  const [selectedYear, setSelectedYear] = useState('all');
   const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
-    const extensions = ['jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'];
+    const allImages = importAllImages();
+    console.log('[DEBUG] All imported images:', allImages);
 
-    // Manually list all images (Alternative: Fetch from API in the future)
-    const imageFiles = [
-      "poster_2015.jpg", "players_2015.png",
-      "champions_2016.jpg", "team_2016.png",
-      "podium_2017.jpg", "event_2017.jpeg",
-      "tournament_2018.jpg", "crowd_2018.png",
-      "match_2019.jpg", "winners_2019.png",
-      "poster_2020.jpg", "finals_2020.jpeg",
-      "trophy_2021.jpg", "battle_2021.png",
-      "poster_2022.jpg", "celebration_2022.jpeg",
-      "players_2023.jpg", "team_2023.png",
-      "champions_2024.jpg", "grand_finale_2024.jpeg"
-    ];
-
-    const organizedImages = {};
-
-    imageFiles.forEach(file => {
-      const yearMatch = file.match(/_(\d{4})/);
+    // Group images by year (assumed from file name, e.g. 'poster_2019.jpg')
+    const organized = {};
+    allImages.forEach(({ path, src }) => {
+      // Example path: '../assets/gallery_images/poster_2019.jpg'
+      // We'll parse the actual filename:
+      const fileName = path.split('/').pop(); // e.g. "poster_2019.jpg"
+      const yearMatch = fileName.match(/_(\d{4})/);
       if (yearMatch) {
         const year = yearMatch[1];
-        if (!organizedImages[year]) {
-          organizedImages[year] = [];
+        if (!organized[year]) {
+          organized[year] = [];
         }
-        organizedImages[year].push(`/gallery_images/${file}`);
+        organized[year].push(src); // store the final string URL
       }
     });
 
-    setImagesByYear(organizedImages);
+    console.log('[DEBUG] Organized images by year:', organized);
+    setImagesByYear(organized);
   }, []);
 
   return (
@@ -63,31 +81,37 @@ function Gallery() {
           <InputLabel>Select Year</InputLabel>
           <Select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
             <MenuItem value="all">All Years</MenuItem>
-            {Object.keys(imagesByYear).sort((a, b) => b - a).map(year => (
-              <MenuItem key={year} value={year}>{year}</MenuItem>
+            {Object.keys(imagesByYear).sort((a, b) => b - a).map((year) => (
+              <MenuItem key={year} value={year}>
+                {year}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
 
         {/* Gallery Grid */}
-        {Object.keys(imagesByYear).sort((a, b) => b - a).map(year => (
-          (selectedYear === "all" || selectedYear === year) && (
+        {Object.keys(imagesByYear).sort((a, b) => b - a).map((year) => {
+          if (selectedYear !== 'all' && selectedYear !== year) return null;
+          return (
             <Box key={year} sx={{ mb: 6 }}>
               <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 2, color: 'secondary.main' }}>
                 {year}
               </Typography>
               <Grid container spacing={3} justifyContent="center">
-                {imagesByYear[year]?.map((image, index) => (
+                {imagesByYear[year]?.map((imageUrl, index) => (
                   <Grid item xs={12} sm={6} md={4} key={index}>
                     <motion.div whileHover={{ scale: 1.05 }}>
                       <Card sx={{ borderRadius: '12px', overflow: 'hidden', boxShadow: 3 }}>
-                        <CardActionArea onClick={() => setSelectedImage(image)}>
+                        <CardActionArea onClick={() => setSelectedImage(imageUrl)}>
                           <CardMedia
                             component="img"
                             height="220"
-                            image={image}
+                            image={imageUrl}
                             alt={`Gallery ${year}`}
-                            onError={(e) => { e.target.src = "/gallery_images/fallback.jpg"; }} // ✅ Fallback Image
+                            onError={(e) => {
+                              console.error(`Image failed to load: ${imageUrl}`);
+                              e.target.src = '/fallback.jpg';
+                            }}
                           />
                         </CardActionArea>
                       </Card>
@@ -96,18 +120,21 @@ function Gallery() {
                 ))}
               </Grid>
             </Box>
-          )
-        ))}
+          );
+        })}
 
         {/* Modal to View Large Image */}
         <Dialog open={!!selectedImage} onClose={() => setSelectedImage(null)} maxWidth="md">
           <DialogContent sx={{ textAlign: 'center' }}>
             {selectedImage && (
-              <img src={selectedImage} alt="Gallery Image" style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '12px' }} />
+              <img
+                src={selectedImage}
+                alt="Gallery Image"
+                style={{ maxWidth: '100%', maxHeight: '90vh', borderRadius: '12px' }}
+              />
             )}
           </DialogContent>
         </Dialog>
-
       </Container>
       <Footer />
     </>

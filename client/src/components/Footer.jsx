@@ -13,9 +13,13 @@ function Footer() {
         <Link href="https://www.facebook.com/EJCDiaboloBattle/" target="_blank" rel="noopener" sx={{ color: '#06BCC1' }}>
           Facebook
         </Link>{' '}
-        and{' '}
+          ,{' '}
         <Link href="https://www.instagram.com/ejc_diabolo_battle/" target="_blank" rel="noopener" sx={{ color: '#06BCC1' }}>
-          Instagram
+          Instagram{' '}
+        </Link>
+           and{' '}
+          <Link href="https://www.youtube.com/@DiaboloBattle/" target="_blank" rel="noopener" sx={{ color: '#06BCC1' }}>
+          YouTube{' '}
         </Link>
       </Typography>
     </Box>
