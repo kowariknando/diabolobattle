@@ -1,20 +1,23 @@
-# Use official Node image
-FROM node:16
+# Use an updated Node.js version (bcrypt requires Node 18+)
+FROM node:18
 
-# Create app directory
+# Set the working directory inside the container
 WORKDIR /usr/src/app
 
-# Copy package*.json
+# Copy only package.json and package-lock.json first (to leverage Docker caching)
 COPY package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy the rest of the server code
+# Ensure bcrypt is installed correctly inside the container
+RUN npm rebuild bcrypt --build-from-source
+
+# Copy the rest of the application files
 COPY . .
 
-# Expose the port (for local clarity)
+# Expose the port used by the app
 EXPOSE 5000
 
-# Command to start
+# Command to start the application
 CMD ["npm", "start"]
