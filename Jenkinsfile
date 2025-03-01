@@ -1,14 +1,11 @@
 pipeline {
-    agent {
-        // We'll build and run in Jenkins's Docker or on the local node if Docker is installed
-        // "any" means run on any available Jenkins agent
-        any
-    }
+    agent any  // or agent { docker { image 'node:18' } }
+
     stages {
         stage('Checkout') {
             steps {
-                // Clones your GitHub repository
-                git branch: 'main', url: 'https://github.com/kowariknando/diabolobattle.git'
+                // Clones the code from your GitHub (though Jenkins does this automatically).
+                checkout scm
             }
         }
         stage('Install Dependencies') {
@@ -19,22 +16,23 @@ pipeline {
         }
         stage('Run Postman Tests') {
             steps {
-                // Install newman (if not installed globally)
+                // If newman is not installed globally:
                 sh 'npm install -g newman'
-                // Run your Postman collection
+                // Adjust path to your collection if needed:
                 sh 'newman run tests/myapp.postman_collection.json'
             }
         }
         stage('Build Docker Image') {
             steps {
-                // Build Docker image based on Dockerfile in this repo
+                // If you’re using Docker, build with your Dockerfile
+                // (Make sure your Dockerfile has EXPOSE 5000 if your server runs on 5000)
                 sh 'docker build -t my-mern-app .'
             }
         }
         stage('Run Container') {
             steps {
-                // Stop any existing container
                 script {
+                    // Stop existing container if it’s running
                     sh '''
                     if [ "$(docker ps -q -f name=my-mern-app-container)" ]; then
                         docker stop my-mern-app-container
@@ -42,14 +40,14 @@ pipeline {
                     fi
                     '''
                 }
-                // Run new container
+                // Run new container, mapping port 5000 on the host to port 5000 in the container
                 sh 'docker run -d -p 5000:5000 --name my-mern-app-container my-mern-app'
             }
         }
     }
     post {
         always {
-            // Clean up workspace
+            // Clean up Jenkins workspace
             cleanWs()
         }
     }
