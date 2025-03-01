@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // might skip checkout if you put Dockerfile in Jenkins
+            sh 'sleep 1'
             }
         }
         stage('Build minimal Docker Image') {
