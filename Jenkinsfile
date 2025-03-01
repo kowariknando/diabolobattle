@@ -14,8 +14,8 @@ pipeline {
         }
         stage('Run Postman Tests') {
             steps {
-                sh 'npm install -g newman'
-                sh 'newman run tests/myapp.postman_collection.json'
+                sh 'npm install newman'
+                sh 'npx newman run tests/myapp.postman_collection.json'
             }
         }
         stage('Build Docker Image') {
