@@ -1,23 +1,20 @@
-# Use the latest LTS version of Node (Node 18)
+# Dockerfile at the root of your repository
 FROM node:18
 
-# Set the working directory inside the container
-WORKDIR /usr/src/app
+# Create app directory inside the container
+WORKDIR /app
 
-# Copy package.json and package-lock.json first (for better caching)
+# Copy only package.json and package-lock.json first (for faster caching)
 COPY package*.json ./
 
-# Install dependencies
+# Install backend dependencies
 RUN npm install
 
-# Ensure bcrypt and other native dependencies are rebuilt correctly
-RUN npm rebuild bcrypt --build-from-source
-
-# Copy the rest of the application files
+# Copy all project files into container
 COPY . .
 
-# Expose the port the app runs on
+# Expose the backend port (check what port you actually use in your code)
 EXPOSE 5000
 
-# Command to start the application
-CMD ["npm", "start"]
+# Start the backend
+CMD ["npm", "run", "start"]
